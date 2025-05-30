@@ -31,12 +31,18 @@ const SignInForm = () => {
         password: formData.password,
       });
       const loginInfo = loginResponse.data;
+      console.log("Login response:", loginInfo.message);
       const { accessToken, refreshToken, user } = loginInfo.data;
       // Store tokens and user in Redux
-      dispatch(signInSuccess({ accessToken, refreshToken, user }));
-      setLoading(false);
-      toast.success("Login successful!");
-      navigate("/");
+
+      if (loginInfo.statusCode === 200) {
+        toast.success(loginInfo.message);
+        dispatch(signInSuccess({ accessToken, refreshToken, user }));
+        setLoading(false);
+        navigate("/");
+      } else {
+        toast.error("Login failed!");
+      }
     } catch (error) {
       setLoading(false);
       toast.error("Login failed!");
@@ -44,9 +50,9 @@ const SignInForm = () => {
     }
   };
 
-    const goToSignup = () => {
-        navigate("/signup");
-    };
+  const goToSignup = () => {
+    navigate("/signup");
+  };
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
@@ -92,7 +98,12 @@ const SignInForm = () => {
               Login
             </Button>
 
-            <p className="mt-4">If you don't have an account? <button className="text-blue-600" onClick={goToSignup}>SignUp</button></p>
+            <p className="mt-4">
+              If you don't have an account?{" "}
+              <button className="text-blue-600" onClick={goToSignup}>
+                SignUp
+              </button>
+            </p>
           </div>
         </Form>
       </div>

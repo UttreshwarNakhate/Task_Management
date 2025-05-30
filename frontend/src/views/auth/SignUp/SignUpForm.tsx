@@ -31,8 +31,12 @@ const SignUpForm = () => {
     try {
       const response = await axios.post("/api/register", formData);
 
-      if (response.status === 201) {
-        toast.success("Account created successfully!");
+      console.log("Registration response:", response.data.statusCode);
+      const userData = response.data;
+      console.log("User data:", userData);
+
+      if (userData.statusCode === 201) {
+        toast.success(userData.message);
         navigate("/login");
       } else {
         toast.error("Registration failed!");
