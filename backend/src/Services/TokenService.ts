@@ -21,7 +21,7 @@ export class TokenService {
 
     return sign(payload, ACCESS_TOKEN_SECRET, {
       algorithm: "HS256",
-      expiresIn: "10s", // 1 day
+      expiresIn: "1h", 
       issuer: "task-manager-service",
     });
   }

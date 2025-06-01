@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Form, Button, Spinner } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { toast } from "react-toastify";
 
 const SignUpForm = () => {
@@ -41,11 +41,11 @@ const SignUpForm = () => {
       } else {
         toast.error("Registration failed!");
       }
-    } catch (error: any) {
-      console.error("Signup error:", error);
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as AxiosError<any>;
       const message =
-        error.response?.data?.message ||
-        "An error occurred during registration.";
+        err.response?.data?.error || "An error occurred during registration.";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -111,6 +111,7 @@ const SignUpForm = () => {
             <p className="mt-4 text-center">
               Already have an account?{" "}
               <button
+               type="button"
                 className="btn btn-link p-0 text-decoration-none"
                 onClick={goToLogin}
               >

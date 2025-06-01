@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Button } from "react-bootstrap";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { signInSuccess } from "@/store/slices/auth/authSlice";
@@ -35,6 +35,8 @@ const SignInForm = () => {
       const { accessToken, refreshToken, user } = loginInfo.data;
       // Store tokens and user in Redux
 
+      console.log("LoninResponse: ", loginResponse);
+
       if (loginInfo.statusCode === 200) {
         toast.success(loginInfo.message);
         dispatch(signInSuccess({ accessToken, refreshToken, user }));
@@ -45,8 +47,10 @@ const SignInForm = () => {
       }
     } catch (error) {
       setLoading(false);
-      toast.error("Login failed!");
-      console.error("Login error:", error);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as AxiosError<any>;
+      const message = err.response?.data?.error;
+      toast.error(message);
     }
   };
 

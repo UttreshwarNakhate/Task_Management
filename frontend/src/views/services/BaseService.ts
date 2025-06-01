@@ -16,7 +16,6 @@ interface CustomAxiosRequestConfig extends AxiosRequestConfig {
 // Request interceptor to add access token to headers
 BaseService.interceptors.request.use(
   (config) => {
-    
     const { accessToken } = store.getState().auth;
     if (accessToken) {
       config.headers = {
@@ -36,8 +35,6 @@ BaseService.interceptors.response.use(
     const { response } = error;
     const originalRequest = error.config as CustomAxiosRequestConfig;
 
-    console.log("Response response:", response);
-
     if (
       response &&
       unauthorizedCode.includes(response.status) &&
@@ -46,17 +43,13 @@ BaseService.interceptors.response.use(
       originalRequest._retry = true;
 
       const { refreshToken, user } = store.getState().auth;
-        console.log("refresh token: ", refreshToken)
-
 
       if (refreshToken) {
         try {
           // Call refresh token API (no headers, no body)
-          const resp = await axios.post("/api/refresh-token", { refreshToken });    
+          const resp = await axios.post("/api/refresh-token", { refreshToken });
 
-          console.log("Refresh token response:", resp.data);
-            const tokenResponse = resp.data;
-            console.log("Token response:", tokenResponse.data);
+          const tokenResponse = resp.data;
           if (tokenResponse.statusCode === 200 && tokenResponse.data) {
             const {
               accessToken: newAccessToken,

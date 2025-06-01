@@ -1,11 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Button from "react-bootstrap/Button";
-import axios from "axios";
+import { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import Spinner from "react-bootstrap/Spinner";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import BaseService from "../services/BaseService";
 
 // Task interface
 interface Task {
@@ -45,20 +46,23 @@ const TaskCard = () => {
 
   // Fetch task details
   useEffect(() => {
+    setLoading(true);
     fetchTaskDetails();
   }, [taskId]);
 
   // Function to fetch task details by ID
   const fetchTaskDetails = async () => {
     try {
-      const response = await axios.get(`/api/getTaskById/${taskId}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const response = await BaseService.get(`/getTaskById/${taskId}`);
       setLoading(false);
       setTaskCard(response.data.data);
     } catch (error) {
       setLoading(false);
-      console.error("Error fetching task details:", error);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as AxiosError<any>;
+      const message =
+        err.response?.data?.error || "Error fetching task details";
+      toast.error(message);
     }
   };
 
@@ -66,15 +70,14 @@ const TaskCard = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const res = await axios.get("/api/me", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-
-        console.log("User Profile Data:", res.data.data);
-
+        const res = await BaseService.get("/me");
         setUserInfo(res.data.data);
-      } catch (err) {
-        console.error("Failed to fetch user profile:", err);
+      } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const err = error as AxiosError<any>;
+        const message =
+          err.response?.data?.error || "Failed to fetch user profile";
+        toast.error(message);
       }
     };
     fetchUserProfile();
@@ -93,22 +96,32 @@ const TaskCard = () => {
     const newStatus = e.target.value as Task["status"];
 
     try {
-      await axios.put(
-        `/api/updateTask/${taskId}`,
-        { status: newStatus },
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
+      const response = await BaseService.put(`/updateTask/${taskId}`, {
+        status: newStatus,
+      });
+      const task = response.data.statusCode === 200;
+      console.log(task);
+      if (response.data.statusCode === 200) {
+        console.log("Call is here");
 
-      setTaskCard((prev) => ({ ...prev, status: newStatus }));
-      fetchTaskDetails();
-      toast.success("Task status updated successfully");
+        toast.success("Task status updated successfully");
+        setUpdating(false);
+        setTaskCard((prev) => ({ ...prev, status: newStatus }));
+        // Wait 300ms before fetching
+        setTimeout(() => {
+          fetchTaskDetails();
+        }, 1000);
+      } else {
+        setUpdating(false);
+        toast.error("Error occured while updating status");
+      }
     } catch (error) {
-      console.error("Error updating task status:", error);
-      toast.error("Failed to update task status");
-    } finally {
       setUpdating(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as AxiosError<any>;
+      const message =
+        err.response?.data?.error || "Failed to update task status";
+      toast.error(message);
     }
   };
 

@@ -3,6 +3,7 @@
 import mongoose from "mongoose";
 import { DB_NAME } from "../constants/db.constant";
 import config from "./config";
+import logger from "../utils/logger";
 
 // Extracting the database URL from the configuration
 const DB_URL = config.DB_URL;
@@ -12,11 +13,11 @@ const DB_URL = config.DB_URL;
 const connectDB = async () => {
   try {
     const connectionInstance = await mongoose.connect(`${DB_URL}/${DB_NAME}`);
-    console.log(
+    logger.info(
       `\n MONGODB connected !! DB HOST: ${connectionInstance.connection.host}`
     );
   } catch (error) {
-    console.log("MONGODB connection error", error);
+    logger.error("MONGODB connection error", error);
     process.exit(1);
   }
 };

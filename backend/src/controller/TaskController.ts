@@ -12,6 +12,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import customErrorHandler from "../Services/CustomErrorHandlerService";
 import { createTaskValidator } from "../validators/taskValidators/createtask.validator";
 import { getTaskValidator } from "../validators/taskValidators/getTasks.validator";
+import logger from "../utils/logger";
 
 /**
  * Create a new task
@@ -51,7 +52,7 @@ export const createTask = asyncHandler(async (req: AuthRequest, res, next) => {
     // Return success response
     httpResponse(req, res, 201, TASK_CREATED, task);
   } catch (err) {
-    console.error("Error creating task:", err);
+    logger.error("Error creating task:", err);
     next(customErrorHandler.serverError("Error creating task"));
   }
 });
@@ -112,7 +113,7 @@ export const getTasks = asyncHandler(async (req: AuthRequest, res, next) => {
 
     httpResponse(req, res, 200, TASK_FETCHED, getTasks);
   } catch (err) {
-    console.error("Error fetching tasks:", err);
+    logger.error("Error fetching tasks:", err);
     next(customErrorHandler.serverError("Error fetching tasks"));
   }
 });
@@ -131,7 +132,7 @@ export const getTaskById = asyncHandler(async (req: AuthRequest, res, next) => {
 
     httpResponse(req, res, 200, TASK_FETCHED, task);
   } catch (err) {
-    console.error("Error fetching task:", err);
+    logger.error("Error fetching task:", err);
     next(customErrorHandler.serverError("Error fetching task"));
   }
 });
@@ -142,7 +143,7 @@ export const getTaskById = asyncHandler(async (req: AuthRequest, res, next) => {
  */
 export const updateTask = asyncHandler(async (req: AuthRequest, res, next) => {
   try {
-    console.log("Request Body for Update Task:", req.body);
+    logger.info("Request Body for Update Task:", req.body);
 
     // Update task and return new version using { new: true }
     const updatedTask = await Task.findOneAndUpdate(
@@ -151,7 +152,7 @@ export const updateTask = asyncHandler(async (req: AuthRequest, res, next) => {
       { new: true } // Return updated doc
     );
 
-    console.log("Updated Task:", updatedTask);
+    logger.info("Updated Task:", updatedTask);
 
     if (!updatedTask) {
       next(customErrorHandler.notFound("Task not found"));
@@ -160,7 +161,7 @@ export const updateTask = asyncHandler(async (req: AuthRequest, res, next) => {
 
     httpResponse(req, res, 200, TASK_UPDATED, updatedTask);
   } catch (err) {
-    console.error("Error updating task:", err);
+    logger.error("Error updating task:", err);
     next(customErrorHandler.serverError("Error updating task"));
   }
 });
@@ -171,14 +172,14 @@ export const updateTask = asyncHandler(async (req: AuthRequest, res, next) => {
  */
 export const deleteTask = asyncHandler(async (req: AuthRequest, res, next) => {
   try {
-    console.log("Request Params for Delete Task:", req.params);
+    logger.info("Request Params for Delete Task:", req.params);
     // Find and delete task where id and user match
     const deleted = await Task.findOneAndDelete({
       _id: req.params.id,
       userId: req.userId,
     });
 
-    console.log("Deleted Task:", deleted);
+    logger.info("Deleted Task:", deleted);
 
     if (!deleted) {
       next(customErrorHandler.notFound("Task not found"));
@@ -187,7 +188,7 @@ export const deleteTask = asyncHandler(async (req: AuthRequest, res, next) => {
 
     httpResponse(req, res, 200, TASK_DELETED, deleted);
   } catch (err) {
-    console.error("Error deleting task:", err);
+    logger.error("Error deleting task:", err);
     next(customErrorHandler.serverError("Error deleting task"));
   }
 });

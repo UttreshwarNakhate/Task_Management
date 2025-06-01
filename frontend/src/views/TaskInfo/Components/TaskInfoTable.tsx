@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useEffect, useState } from "react";
 import Table from "react-bootstrap/Table";
 import { Bounce, ToastContainer, toast } from "react-toastify";
@@ -42,6 +42,7 @@ const TaskInfoTable = () => {
   const [pageSize, setPageSize] = useState(10);
   const [statusFilter, setStatusFilter] = useState("");
   const [updating, setUpdating] = useState(false);
+  const [notTasks, setNoTasks] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -55,7 +56,6 @@ const TaskInfoTable = () => {
   const dispatch = useDispatch();
 
   // Redux selector to get access accessToken
-  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
   const userId = useSelector((state: RootState) => state?.auth?.user?.id);
 
   // Fetch tasks when the component mounts or when pagination, page size, or status filter changes
@@ -71,15 +71,7 @@ const TaskInfoTable = () => {
   // Function to fetch tasks from the API
   const fetchTasks = async (page: number) => {
     try {
-      // const response = await axios.get(
-      //   `/api/getTasks?page=${page}&limit=${pageSize}${
-      //     statusFilter ? `&status=${statusFilter}` : ""
-      //   }`,
-      //   {
-      //     headers: { Authorization: `Bearer ${accessToken}` },
-      //   }
-      // );
-
+      setNoTasks('')
       const response = await BaseService.get(`/getTasks`, {
         params: {
           page,
@@ -90,18 +82,21 @@ const TaskInfoTable = () => {
       // Access the tasks array from the correct path
       const tasks = response.data.data.tasks;
       setLoading(false);
-      if (tasks) {
+      if (tasks.length !== 0) {
         setTaskList(tasks);
         setTotalPages(response.data.data.totalPages);
         setFilteredTasks(tasks);
       } else {
+        setNoTasks("No tasks found. Please create a task first.");
         setLoading(false);
-        toast.error("No tasks found in response");
+        toast.error("No tasks found. Please create a task first.");
       }
     } catch (error) {
       setLoading(false);
-      console.error("Error fetching tasks:", error);
-      toast.error("Failed to load tasks");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as AxiosError<any>;
+      const message = err.response?.data?.error;
+      toast.error(message);
     }
   };
 
@@ -143,12 +138,6 @@ const TaskInfoTable = () => {
   const createTask = async () => {
     try {
       setCreateLoading(true);
-      // const response = await axios.post(`/api/createTask`, formData, {
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     Authorization: `Bearer ${accessToken}`,
-      //   },
-      // });
       const response = await BaseService.post(`/createTask`, formData, {
         headers: { "Content-Type": "application/json" },
       });
@@ -167,8 +156,10 @@ const TaskInfoTable = () => {
     } catch (error) {
       setCreateLoading(false);
       setFormData(defaultFormState);
-      console.error("Error submitting form:", error);
-      toast.error("An error occurred while adding the task.");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as AxiosError<any>;
+      const message = err.response?.data?.error || "An error occurred while adding the task.";
+      toast.error(message);
     }
     setModalShow(false);
   };
@@ -184,9 +175,6 @@ const TaskInfoTable = () => {
   // Function to fetch specific task's data for editing
   const editTask = async (taskId: string) => {
     try {
-      // const response = await axios.get(`/api/getTaskById/${taskId}`, {
-      //   headers: { Authorization: `Bearer ${accessToken}` },
-      // });
       const response = await BaseService.get(`/getTaskById/${taskId}`);
       console.log("Response from API:", response.data);
       const task = response.data.data;
@@ -198,7 +186,10 @@ const TaskInfoTable = () => {
         console.error("No data found in response");
       }
     } catch (error) {
-      console.error("Error updating task:", error);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as AxiosError<any>;
+      const message = err.response?.data?.error ||"Error updating task";
+      toast.error(message);
     }
   };
 
@@ -206,17 +197,11 @@ const TaskInfoTable = () => {
   const updateTask = async () => {
     try {
       setUpdating(true);
-      // const response = await axios.put(
-      //   `/api/updateTask/${updateTaskInfo?._id}`,
-      //   updateTaskInfo,
-      //   {
-      //     headers: { Authorization: `Bearer ${accessToken}` },
-      //   }
-      // );
-const response = await BaseService.put(
-      `/updateTask/${updateTaskInfo?._id}`,
-      updateTaskInfo
-    );
+
+      const response = await BaseService.put(
+        `/updateTask/${updateTaskInfo?._id}`,
+        updateTaskInfo
+      );
       console.log("Response from API:", response.data);
       const task = response.data;
       console.log("Updated task data:", task.statusCode);
@@ -232,8 +217,11 @@ const response = await BaseService.put(
       }
     } catch (error) {
       setUpdating(false);
-      console.error("Error updating task:", error);
-      toast.error("An error occurred while updating the task.");
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as AxiosError<any>;
+      const message = err.response?.data?.error || 'An error occurred while updating the task.';
+      toast.error(message);
     }
   };
 
@@ -247,9 +235,6 @@ const response = await BaseService.put(
   const deleteTask = async () => {
     try {
       setDeleteLoading(true);
-      // const response = await axios.delete(`/api/deleteTask/${deleteTaskId}`, {
-      //   headers: { Authorization: `Bearer ${accessToken}` },
-      // });
       const response = await BaseService.delete(`/deleteTask/${deleteTaskId}`);
       const task = response.data;
       if (task.statusCode === 200) {
@@ -263,21 +248,17 @@ const response = await BaseService.put(
       }
     } catch (error) {
       setDeleteLoading(false);
-      console.error("Error deleting task:", error);
-      toast.error("An error occurred while deleting the task.");
-    }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as AxiosError<any>;
+      const message = err.response?.data?.error || "An error occurred while deleting the task.";
+      toast.error(message);
+     }
   };
 
   // Function to handle logout
   const handleLogout = async () => {
     try {
-      const response = await axios.post(
-        "/api/logout",
-        {},
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
+      const response = await BaseService.post("/logout", {});
 
       const logoutResponse = response.data;
       console.log("Logout response data:", logoutResponse.statusCode);
@@ -292,8 +273,10 @@ const response = await BaseService.put(
         toast.warning("Server responded but logout might have failed.");
       }
     } catch (error) {
-      console.error("Logout error:", error);
-      toast.error("Failed to log out from server.");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as AxiosError<any>;
+      const message = err.response?.data?.error || 'Failed to log out from server.';
+      toast.error(message);
     }
   };
 
@@ -431,6 +414,12 @@ const response = await BaseService.put(
               </>
             )}
           </Table>
+
+          {/*Tasks Not found message */}
+          <span className="text-gray-500 my-4 w-fit bg-gray-200 p-2 rounded-xl font-semibold text-base">
+            {notTasks}
+          </span>
+
           <div className="flex justify-between">
             {/* Perpage records */}
             <div className="flex justify-start my-auto p-2 bg-gray-300 rounded-md">

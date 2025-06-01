@@ -15,12 +15,14 @@ import {
   USER_ALREADY_EXISTS,
   USER_CREATED,
   USER_LOGGED_IN,
+  USER_LOGGED_OUT,
   USER_PROFILE_FETCHED,
 } from "../constants/messages_constant";
 import httpResponse from "../utils/httpResponse";
 import { RefreshToken } from "../model/refreshToken.model";
 import config from "../config/config";
 import { AuthRequest } from "../middleware/auth.middleware";
+import logger from "../utils/logger";
 
 const REFRESH_TOKEN_SECRET: string = config.REFRESH_TOKEN_SECRET as string;
 
@@ -34,7 +36,7 @@ export const register = asyncHandler(async (req, res, next) => {
     // If validation fails, return 400 with error details
     if (validationError) {
       // If there is an error returned, log the error and pass it to next().
-      console.error("Validation error:", validationError);
+      logger.error("Validation error:", validationError);
       return next(
         customErrorHandler.validationFailed(PAYLOAD_VALIDATION_FAILED)
       );
@@ -46,7 +48,7 @@ export const register = asyncHandler(async (req, res, next) => {
     // Check if the user already exists in the database
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      console.log("User already exists:");
+      logger.info("User already exists:");
       return next(customErrorHandler.alreadyExist(USER_ALREADY_EXISTS));
     } else {
       // Hash the password using bcrypt
@@ -81,7 +83,7 @@ export const login = asyncHandler(async (req, res, next) => {
 
     // Find user by email
     const user = await User.findOne({ email });
-    console.log("User found:", user);
+    logger.info("User found:", user);
     if (!user) {
       next(customErrorHandler.notFound("User not found"));
       return;
@@ -90,8 +92,8 @@ export const login = asyncHandler(async (req, res, next) => {
     // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      next(customErrorHandler.validationFailed("Invalid credentials"));
-      return;
+     return next(customErrorHandler.validationFailed("Invalid credentials"));
+      
     }
 
     // Update login status and timestamp
@@ -120,7 +122,7 @@ export const login = asyncHandler(async (req, res, next) => {
     };
     httpResponse(req, res, 200, USER_LOGGED_IN, response);
   } catch (err) {
-    console.error("Login error:", err);
+    logger.error("Login error:", err);
     next(customErrorHandler.serverError("Error logging in user"));
   }
 });
@@ -131,7 +133,7 @@ export const logout = asyncHandler(async (req: AuthRequest, res, next) => {
     // Check if userId is available in request
     const userId = req.userId;
 
-    console.log("User ID from request in the controller:", userId);
+    logger.info("User ID from request in the controller:", userId);
 
     // if userId is not provided, return an error
     if (!userId) {
@@ -153,71 +155,19 @@ export const logout = asyncHandler(async (req: AuthRequest, res, next) => {
     await TokenService.deleteRefreshToken(userId);
 
     // Return success response
-    httpResponse(req, res, 200, "User logged out successfully", null);
+    httpResponse(req, res, 200, USER_LOGGED_OUT, null);
   } catch (error) {
-    console.error("Logout error:", error);
+    logger.error("Logout error:", error);
     next(customErrorHandler.serverError("Error logging out user"));
   }
 });
 
-// This function handles refreshing the access token using a valid refresh token
-// export const refreshToken = asyncHandler(async (req, res, next) => {
-//   try {
-//     const { refreshToken } = req.body;
-
-//     console.log("Refresh token received in controller:", refreshToken);
-//     // Check if refresh token is available
-//     if (!refreshToken) {
-//       next(customErrorHandler.tokenRetuired(REFRESH_TOKEN_REQUIRED));
-//       return;
-//     }
-
-//     // Verify refresh token
-//     if (!REFRESH_TOKEN_SECRET) {
-//       return next(customErrorHandler.notFound(SECRET_NOT_FOUND));
-//     }
-
-//     // Decode the refresh token to get userId
-//     const decoded: any = TokenService.verifyRefreshToken(refreshToken);
-
-//     console.log("Decoded refresh token:", decoded);
-
-//     // Check if token exists in DB
-//     const savedToken = await RefreshToken.findOne({
-//       token: refreshToken,
-//       userId: decoded.userId,
-//     });
-
-//     // If token is not found in DB, return error
-//     if (!savedToken) {
-//       next(customErrorHandler.notFound(REFRESH_TOKEN_NOT_FOUND));
-//       return;
-//     }
-
-//     // Generate new access token
-//     const newAccessToken = TokenService.generateAccessToken({
-//       userId: decoded.userId,
-//     });
-
-//     // Return the new access token in the response
-//     httpResponse(req, res, 200, ACCESS_TOKEN_CREATED, {
-//       accessToken: newAccessToken,
-//     });
-//   } catch (error) {
-//     console.error("Refresh token error:", error);
-//     next(
-//       customErrorHandler.validationFailed("Invalid or expired refresh token")
-//     );
-//   }
-// });
-
-// This function retrieves the user profile based on the authenticated user's ID
 
 export const refreshToken = asyncHandler(async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
 
-    console.log("Refresh token received in controller:", refreshToken);
+    logger.info("Refresh token received in controller:", refreshToken);
     // Check if refresh token is available
     if (!refreshToken) {
       next(customErrorHandler.tokenRetuired(REFRESH_TOKEN_REQUIRED));
@@ -231,7 +181,7 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
 
     // Decode the refresh token to get userId
     const decoded: any = TokenService.verifyRefreshToken(refreshToken);
-    console.log("Decoded refresh token:", decoded);
+    logger.info("Decoded refresh token:", decoded);
 
     // Check if token exists in DB
     const savedToken = await RefreshToken.findOne({
@@ -267,7 +217,7 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
       refreshToken: newRefreshToken,
     });
   } catch (error) {
-    console.error("Refresh token error:", error);
+    logger.error("Refresh token error:", error);
     next(
       customErrorHandler.validationFailed("Invalid or expired refresh token")
     );
@@ -290,7 +240,7 @@ export const getUserProfile = asyncHandler(
       // Send user profile data
       httpResponse(req, res, 200, USER_PROFILE_FETCHED, user);
     } catch (err) {
-      console.error("Error fetching user profile:", err);
+      logger.error("Error fetching user profile:", err);
       next(customErrorHandler.serverError("Error fetching user profile"));
     }
   }
