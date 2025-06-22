@@ -24,8 +24,6 @@ import config from "../config/config";
 import { AuthRequest } from "../middleware/auth.middleware";
 import logger from "../utils/logger";
 
-const REFRESH_TOKEN_SECRET: string = config.REFRESH_TOKEN_SECRET as string;
-
 // This function handles user Registration
 // It checks if the user already exists, hashes the password, and saves the new user to the database
 export const register = asyncHandler(async (req, res, next) => {
@@ -92,8 +90,7 @@ export const login = asyncHandler(async (req, res, next) => {
     // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-     return next(customErrorHandler.validationFailed("Invalid credentials"));
-      
+      return next(customErrorHandler.validationFailed("Invalid credentials"));
     }
 
     // Update login status and timestamp
@@ -102,9 +99,10 @@ export const login = asyncHandler(async (req, res, next) => {
     await user.save();
 
     // Generate access and refresh tokens
-    const accessToken = TokenService.generateAccessToken({ userId: user._id });
+    const accessToken = TokenService.generateAccessToken({ userId: user._id, ip: req.ip });
     const refreshToken = TokenService.generateRefreshToken({
       userId: user._id,
+      ip: req.ip
     });
 
     // Save refresh token to DB
@@ -137,7 +135,7 @@ export const logout = asyncHandler(async (req: AuthRequest, res, next) => {
 
     // if userId is not provided, return an error
     if (!userId) {
-      return next(customErrorHandler.unAuthorized("User not found"));
+      return next(customErrorHandler.unAuthorized("User id not found"));
     }
 
     // Update user status
@@ -162,31 +160,31 @@ export const logout = asyncHandler(async (req: AuthRequest, res, next) => {
   }
 });
 
-
 export const refreshToken = asyncHandler(async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
 
-    logger.info("Refresh token received in controller:", refreshToken);
+    // logger.info("Refresh token received in controller:", refreshToken);
     // Check if refresh token is available
     if (!refreshToken) {
       next(customErrorHandler.tokenRetuired(REFRESH_TOKEN_REQUIRED));
       return;
     }
 
-    // Verify refresh token
-    if (!REFRESH_TOKEN_SECRET) {
-      return next(customErrorHandler.notFound(SECRET_NOT_FOUND));
-    }
-
-    // Decode the refresh token to get userId
+      // Decode the refresh token to get userId
     const decoded: any = TokenService.verifyRefreshToken(refreshToken);
-    logger.info("Decoded refresh token:", decoded);
+    // logger.info("Decoded refresh token:", decoded);
+    logger.info("Searching token in DB for userId:", decoded.userId);
 
     // Check if token exists in DB
     const savedToken = await RefreshToken.findOne({
       token: refreshToken,
       userId: decoded.userId,
+    });
+    logger.info("Saved token in DB:", {
+      meta: {
+        savedToken: savedToken,
+      },
     });
 
     // If token is not found in DB, return error
@@ -206,10 +204,14 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
     });
 
     // Save new refresh token in DB
-    await TokenService.saveRefreshToken(decoded.userId, newRefreshToken);
-
+    const save = await TokenService.saveRefreshToken(
+      decoded.userId,
+      newRefreshToken
+    );
+    logger.info(`Saved ewn token in DB:, ${JSON.stringify(save)}`);
     // Delete old refresh token from DB
-    await TokenService.deleteRefreshToken(refreshToken);
+    const deleteNewToken = await TokenService.deleteRefreshToken(refreshToken);
+    logger.info(`"Saved ewn token in DB:", ${JSON.stringify(deleteNewToken)}`);
 
     // Return both tokens to client
     httpResponse(req, res, 200, ACCESS_TOKEN_CREATED, {

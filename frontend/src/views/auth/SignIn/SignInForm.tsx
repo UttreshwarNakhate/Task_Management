@@ -6,8 +6,10 @@ import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { signInSuccess } from "@/store/slices/auth/authSlice";
 import Spinner from "react-bootstrap/Spinner";
+import BaseService from "@/views/services/BaseService";
 
 const SignInForm = () => {
+  const [message, setMessage] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -26,7 +28,7 @@ const SignInForm = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const loginResponse = await axios.post("/api/login", {
+      const loginResponse = await BaseService.post("/api/login", {
         email: formData.email,
         password: formData.password,
       });
@@ -50,6 +52,8 @@ const SignInForm = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const err = error as AxiosError<any>;
       const message = err.response?.data?.error;
+      console.log("message: ", message);
+      setMessage(message);
       toast.error(message);
     }
   };
@@ -101,6 +105,8 @@ const SignInForm = () => {
             <Button variant="primary" type="submit">
               Login
             </Button>
+
+            <p className="text-xs text-red-500 text-right">{message}</p>
 
             <p className="mt-4">
               If you don't have an account?{" "}

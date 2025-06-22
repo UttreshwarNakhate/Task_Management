@@ -2,10 +2,10 @@ import { sign, verify  } from "jsonwebtoken";
 import createHttpError from "http-errors";
 import mongoose from "mongoose";
 import { RefreshToken } from "../model/refreshToken.model";
-
+import config from "../config/config";
 // Get secrets from environment variables or fallback to default
-const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
+const ACCESS_TOKEN_SECRET = config.ACCESS_TOKEN_SECRET;
+const REFRESH_TOKEN_SECRET = config.REFRESH_TOKEN_SECRET;
 
 export class TokenService {
   /**
@@ -21,7 +21,7 @@ export class TokenService {
 
     return sign(payload, ACCESS_TOKEN_SECRET, {
       algorithm: "HS256",
-      expiresIn: "1h", 
+      expiresIn: "10m", 
       issuer: "task-manager-service",
     });
   }

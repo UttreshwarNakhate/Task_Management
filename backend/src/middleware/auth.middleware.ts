@@ -28,10 +28,16 @@ export const authMiddleware = (
   try {
     // Verify the token using the TokenService
     const decoded = TokenService.verifyAccessToken(token) as {
+      ip: string | undefined;
       userId: string;
     };
 
     logger.info("Decoded Token:", decoded);
+    // Check IP 
+    const requestIp = req.ip;
+    if (decoded.ip !== requestIp) {
+      return res.status(403).json("Token does not match this device");
+    }
 
     // Add userId to request object
     req.userId = decoded.userId;

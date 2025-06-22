@@ -13,7 +13,7 @@ interface CustomAxiosRequestConfig extends AxiosRequestConfig {
   _retry?: boolean;
 }
 
-// Request interceptor to add access token to headers
+// Request interceptor to add access token to headers and also we can add more security things in the headers
 BaseService.interceptors.request.use(
   (config) => {
     const { accessToken } = store.getState().auth;

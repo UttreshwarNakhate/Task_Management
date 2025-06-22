@@ -34,9 +34,7 @@ const TaskCard = () => {
   const navigate = useNavigate();
   const { taskId } = location.state;
 
-  // Redux selector to get access accessToken
-  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
-
+  
   // Status colors mapping
   const statusColors: Record<string, string> = {
     Todo: "bg-blue-100 text-blue-600",
@@ -102,7 +100,6 @@ const TaskCard = () => {
       const task = response.data.statusCode === 200;
       console.log(task);
       if (response.data.statusCode === 200) {
-        console.log("Call is here");
 
         toast.success("Task status updated successfully");
         setUpdating(false);
